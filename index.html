@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+  <title>Jelajah Bumi: Rotasi & Revolusi</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+
+    body {
+      background: #050510;
+      color: #f0f3fa;
+      overflow-x: hidden;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .stars {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+        radial-gradient(2px 2px at 80px 120px, #fff, transparent),
+        radial-gradient(1px 1px at 160px 60px, #fff, transparent),
+        radial-gradient(2px 2px at 240px 200px, #fff, transparent),
+        radial-gradient(1px 1px at 340px 90px, #fff, transparent);
+      background-size: 400px 300px;
+      opacity: 0.5;
+      z-index: -1;
+    }
+
+    header {
+      text-align: center;
+      padding: 3rem 1rem 1.5rem;
+    }
+
+    header h1 {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, #6ee7ff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p {
+      color: #b8c1e0;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1rem;
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: rgba(20, 25, 45, 0.8);
+      border: 1px solid rgba(110, 231, 255, 0.15);
+      border-radius: 20px;
+      padding: 1.5rem;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(167, 139, 250, 0.5);
+    }
+
+    .card h2 {
+      font-size: 1.4rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #6ee7ff;
+    }
+
+    .card p { color: #cbd5f0; margin-bottom: 0.75rem; }
+    .card ul { padding-left: 1.4rem; color: #cbd5f0; }
+    .card ul li { margin-bottom: 0.3rem; }
+    .highlight { color: #a78bfa; font-weight: 600; }
+
+    /* ====== SCENE (Panggung Tata Surya) ====== */
+    .space-scene {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 1 / 1;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Orbit (garis lintasan Bumi) */
+    .orbit-path {
+      position: absolute;
+      width: 82%;
+      height: 82%;
+      border-radius: 50%;
+      border: 1px dashed rgba(167, 139, 250, 0.35);
+    }
+
+    /* ====== MATAHARI (sebagai lampu) ====== */
+    .sun {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fffbe6, #fde047 35%, #f59e0b 75%, #b45309 100%);
+      box-shadow:
+        0 0 25px #fbbf24,
+        0 0 60px rgba(251, 191, 36, 0.7),
+        0 0 120px rgba(251, 191, 36, 0.35);
+      z-index: 5;
+    }
+
+    /* ====== BUMI & BAYANGAN ====== */
+    .earth-system {
+      position: absolute;
+      width: 0;
+      height: 0;
+      z-index: 4;
+    }
+
+    /* Arah bayangan: selalu menjauhi Matahari */
+    .shadow-direction {
+      position: absolute;
+      width: 0;
+      height: 0;
+      /* transform: rotate(...) diatur via JS */
+    }
+
+    /* Bola Bumi */
+    .earth {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      /* warna Bumi: dasar biru laut */
+      background:
+        radial-gradient(circle at 30% 30%, #6ec6ff 0%, #1e6fb8 45%, #0a2a5e 100%);
+      overflow: hidden;
+      transform: translate(-50%, -50%);
+      box-shadow:
+        0 0 18px rgba(79, 172, 254, 0.55),
+        inset -4px -4px 10px rgba(0, 0, 0, 0.55);
+    }
+
+    /* Benua/daratan di permukaan Bumi */
+    .earth::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background:
+        radial-gradient(ellipse 30% 20% at 25% 40%, #4caf50 0%, #2e7d32 70%, transparent 72%),
+        radial-gradient(ellipse 22% 15% at 70% 30%, #66bb6a 0%, #2e7d32 70%, transparent 72%),
+        radial-gradient(ellipse 25% 18% at 55% 75%, #81c784 0%, #388e3c 70%, transparent 72%),
+        radial-gradient(ellipse 18% 12% at 80% 65%, #4caf50 0%, #1b5e20 70%, transparent 72%),
+        radial-gradient(ellipse 20% 14% at 15% 70%, #a5d6a7 0%, #2e7d32 70%, transparent 72%);
+      animation: surface-rotate 8s linear infinite;
+    }
+
+    /* Lapisan awan tipis */
+    .earth .clouds {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background:
+        radial-gradient(ellipse 40% 12% at 60% 20%, rgba(255,255,255,0.5), transparent 70%),
+        radial-gradient(ellipse 30% 10% at 30% 60%, rgba(255,255,255,0.4), transparent 70%),
+        radial-gradient(ellipse 35% 10% at 75% 80%, rgba(255,255,255,0.35), transparent 70%);
+      animation: surface-rotate 12s linear infinite reverse;
+      pointer-events: none;
+    }
+
+    /* ====== LAPISAN CAHAYA MATAHARI (sisi terang) ====== */
+    .earth .sunlight {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      /* Terang di sisi yang menghadap Matahari (default: bawah, di-override JS) */
+      background: radial-gradient(
+        circle at 50% 20%,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 245, 200, 0.25) 30%,
+        transparent 55%
+      );
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* ====== LAPISAN BAYANGAN (sisi gelap/malam) ====== */
+    .earth .night {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      /* Gelap di sisi yang membelakangi Matahari (default: atas) */
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.92) 0%,
+        rgba(0, 0, 0, 0.75) 25%,
+        rgba(0, 0, 0, 0.35) 50%,
+        transparent 70%
+      );
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    /* Efek glow lembut di tepi Bumi untuk kesan 3D */
+    .earth .rim-light {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      box-shadow: inset 0 0 8px rgba(140, 200, 255, 0.6);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Rotasi permukaan Bumi */
+    @keyframes surface-rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Label */
+    .label {
+      position: absolute;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      pointer-events: none;
+    }
+
+    .label-sun {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, 45px);
+      color: #fbbf24;
+    }
+
+    .fact-item {
+      background: rgba(255,255,255,0.03);
+      border-left: 3px solid #6ee7ff;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+    }
+    .fact-item i { color: #a78bfa; margin-right: 0.4rem; }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: #8892b0;
+      font-size: 0.9rem;
+    }
+
+    @media (min-width: 768px) {
+      main { grid-template-columns: 1fr 1fr; }
+      .full-width { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+
+  <header>
+    <h1>Jelajah Bumi: Rotasi & Revolusi</h1>
+    <p>Memahami dua gerakan utama Bumi yang memengaruhi siang-malam, musim, dan kehidupan di planet kita.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2><i class="fas fa-sync-alt"></i> Rotasi Bumi</h2>
+      <p>Rotasi adalah perputaran Bumi pada porosnya dari barat ke timur. Satu kali rotasi membutuhkan waktu sekitar <span class="highlight">23 jam 56 menit 4 detik</span> atau yang biasa disebut satu hari.</p>
+      <p>Rotasi menyebabkan:</p>
+      <ul>
+        <li>Pergantian siang dan malam</li>
+        <li>Perbedaan waktu di berbagai wilayah</li>
+        <li>Pergerakan semu Matahari dari timur ke barat</li>
+        <li>Pembelokan arah angin dan arus laut (efek Coriolis)</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2><i class="fas fa-globe"></i> Revolusi Bumi</h2>
+      <p>Revolusi adalah pergerakan Bumi mengelilingi Matahari pada orbitnya. Satu kali revolusi memerlukan waktu sekitar <span class="highlight">365,25 hari</span> atau satu tahun.</p>
+      <p>Revolusi menyebabkan:</p>
+      <ul>
+        <li>Perubahan musim di Bumi</li>
+        <li>Perbedaan lamanya siang dan malam</li>
+        <li>Terbentuknya rasi bintang yang berbeda tiap bulan</li>
+        <li>Adanya tahun kabisat setiap 4 tahun</li>
+      </ul>
+    </section>
+
+    <section class="card full-width">
+      <h2><i class="fas fa-circle-notch"></i> Ilustrasi Siang & Malam</h2>
+
+      <div class="space-scene" id="scene">
+        <!-- Garis orbit -->
+        <div class="orbit-path"></div>
+
+        <!-- Matahari sebagai sumber cahaya -->
+        <div class="sun"></div>
+        <span class="label label-sun">Matahari</span>
+
+        <!-- Sistem Bumi (diposisikan via JS) -->
+        <div class="earth-system" id="earthSystem">
+          <div class="shadow-direction" id="shadowDirection">
+            <div class="earth">
+              <div class="clouds"></div>
+              <div class="sunlight" id="sunlight"></div>
+              <div class="night" id="night"></div>
+              <div class="rim-light"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p style="text-align:center; color:#b8c1e0; margin-top:1rem;">
+        Sisi Bumi yang menghadap Matahari <span class="highlight">terang (siang)</span>,
+        sisi yang membelakangi Matahari <span class="highlight">gelap (malam)</span>.
+        Bumi berputar pada porosnya sambil mengelilingi Matahari.
+      </p>
+    </section>
+
+    <section class="card full-width">
+      <h2><i class="fas fa-lightbulb"></i> Fakta Menarik</h2>
+      <div class="facts">
+        <div class="fact-item"><i class="fas fa-clock"></i> Satu hari sideris: 23 jam 56 menit</div>
+        <div class="fact-item"><i class="fas fa-calendar-alt"></i> Tahun kabisat: 366 hari</div>
+        <div class="fact-item"><i class="fas fa-temperature-low"></i> Musim terjadi karena kemiringan poros Bumi 23,5°</div>
+        <div class="fact-item"><i class="fas fa-moon"></i> Rotasi Bumi melambat sekitar 1,7 ms per abad</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Jelajah Bumi — Materi edukasi rotasi & revolusi Bumi.</p>
+  </footer>
+
+  <script>
+    const scene = document.getElementById('scene');
+    const earthSystem = document.getElementById('earthSystem');
+    const shadowDirection = document.getElementById('shadowDirection');
+
+    let angle = 0;              // sudut orbit Bumi (derajat)
+    const orbitRadius = 0.41;   // 41% dari lebar scene
+    const speed = 0.4;          // kecepatan orbit per frame
+
+    function animate() {
+      angle += speed;
+
+      const rect = scene.getBoundingClientRect();
+      const size = rect.width;
+      const centerX = size / 2;
+      const centerY = size / 2;
+      const radius = size * orbitRadius;
+
+      // Posisi Bumi di orbit (mengelilingi Matahari di tengah)
+      const rad = angle * Math.PI / 180;
+      const earthX = centerX + radius * Math.cos(rad);
+      const earthY = centerY + radius * Math.sin(rad);
+
+      // Pindahkan sistem Bumi ke posisi tersebut
+      earthSystem.style.left = earthX + 'px';
+      earthSystem.style.top = earthY + 'px';
+
+      // Hitung sudut Bumi terhadap Matahari (dari pusat scene)
+      const dx = earthX - centerX;
+      const dy = earthY - centerY;
+      const angleToSun = Math.atan2(dy, dx) * 180 / Math.PI; // arah dari Matahari ke Bumi
+
+      // Bayangan harus berada di sisi yang MENJAUHI Matahari.
+      // Karena sisi terang menghadap Matahari, sisi gelap ada di arah berlawanan.
+      // Kita putar lapisan bayangan sebesar angleToSun + 90 agar gradient-nya pas.
+      shadowDirection.style.transform = `rotate(${angleToSun + 90}deg)`;
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
